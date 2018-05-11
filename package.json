@@ -1,0 +1,28 @@
+{
+  "name": "au-generate-resource-index",
+  "version": "0.0.1",
+  "description": "Generator to create index.js to declare all resources within a folder as global",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jpravetz/au-generate-resource-index.git"
+  },
+  "keywords": [
+    "aurelia",
+    "webpack",
+    "resources",
+    "aurelia-framework"
+  ],
+  "author": "Jim Pravetz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jpravetz/au-generate-resource-index/issues"
+  },
+  "homepage": "https://github.com/jpravetz/au-generate-resource-index#readme",
+  "devDependencies": {
+    "gulp": "^3.9.1"
+  }
+}
