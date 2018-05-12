@@ -1,6 +1,6 @@
-import fs from 'fs';
-import Path from 'path';
-import util from 'util';
+let fs = require('fs')
+let Path = require('path');
+let util = require('util');
 
 /**
  * Task generates webpack compatible index.js files under the src/resources folder,
@@ -99,7 +99,13 @@ const fsWriteFile = util.promisify(fs.writeFile);
  * @param level {number} Set to 0 for root folder
  * @returns {Promise<any[]>}
  */
-export function generateFolderIndex (root, config, level = 0) {
+module.exports = function (root, config, level) {
+  if (typeof level !== 'number') {
+    level = 0;
+  }
+  if (!config) {
+    throw new Error('Missing config');
+  }
   let exclusions = [];
   let imports = [];
   let resources = {};
