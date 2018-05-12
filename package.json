@@ -1,5 +1,5 @@
 {
-  "name": "au-generate-resource-index",
+  "name": "aurelia-resource-index",
   "version": "0.0.1",
   "description": "Generator to create index.js to declare all resources within a folder as global",
   "main": "src/index.js",
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jpravetz/au-generate-resource-index.git"
+    "url": "git+https://github.com/jpravetz/aurelia-resource-index.git"
   },
   "keywords": [
     "aurelia",
@@ -19,9 +19,9 @@
   "author": "Jim Pravetz",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jpravetz/au-generate-resource-index/issues"
+    "url": "https://github.com/jpravetz/aurelia-resource-index/issues"
   },
-  "homepage": "https://github.com/jpravetz/au-generate-resource-index#readme",
+  "homepage": "https://github.com/jpravetz/aurelia-resource-index#readme",
   "devDependencies": {
     "gulp": "^3.9.1",
     "jest": "^22.4.3",
