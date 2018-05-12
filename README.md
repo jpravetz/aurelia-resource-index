@@ -1,6 +1,6 @@
-# au-generate-resource-index
+# aurelia-resource-index
 
-Generator creates index.js to declare all resources within a folder as global
+Generates index.js that declares all resources within a folder as global
 
 In a project generated with aurelia-cli
 it is common to place all resources within a src/resources folder and to make these resources global.
@@ -8,20 +8,22 @@ it is common to place all resources within a src/resources folder and to make th
 This module will generate a src/resources/index.js file that includes all resources with this folder,
 recursively descending into subfolders.
 
-Generates index that is compatible with requirejs and webpack.
+Can be configured to generate index that is compatible with requirejs and webpack.
 
 ## Install
 
 ```bash
-npm install au-generate-resource-index
+npm install aurelia-resource-index
 ```
 
 ## Configure
 
-In aurelia.json, add the following entry for use with requirejs
+If you create a gulp task for this module, I recommend you configure the module using aurelia.json as shown here.
+
+Add the following entry for use with requirejs
 
 ```json
-  "resourceListGenerator": {
+  "resourceIndex": {
     "view": "html",
     "pal": false,
     "mode": "single"
@@ -31,7 +33,7 @@ In aurelia.json, add the following entry for use with requirejs
 Add the following entry for use with webpack
 
 ```json
-  "resourceListGenerator": {
+  "resourceIndex": {
     "view": "html",
     "pal": true
   },
@@ -39,7 +41,7 @@ Add the following entry for use with webpack
 
 If using [pug](http://pugjs.org) as an html file format, set `"view": "pug"`.
 
-## Options
+## Configuration Options
 
 - `view` - The file extension used for view source files. If using pug then set to `pug`, otherwise must be set to `html`.
 - `pal` (boolean) - If true then each module is declared within a PLATFORM.moduleName() call. Used with webpack.
@@ -56,7 +58,7 @@ import project from '../aurelia.json';
 
 function generateIndex(done) {
   let path = Path.resolve(project.paths.root, project.paths.resources);
-  let config = project.resourceListGenerator;
+  let config = project.resourceIndex;
   generateFolderIndex(path, config, 0)
     .then(() => {
       done();
