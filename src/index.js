@@ -70,7 +70,7 @@ function readExclusions (root) {
   });
 }
 
-function wrapModuleName (moduleId) {
+function wrapModuleName (moduleId, config) {
   if (config.pal) {
     return `PLATFORM.moduleName('./${moduleId}')`;
   } else if (config.mode === 'single') {
@@ -99,7 +99,7 @@ const fsWriteFile = util.promisify(fs.writeFile);
  * @param level {number} Set to 0 for root folder
  * @returns {Promise<any[]>}
  */
-module.exports = function (root, config, level) {
+module.exports = function generateFolderIndex (root, config, level) {
   if (typeof level !== 'number') {
     level = 0;
   }
@@ -168,7 +168,7 @@ module.exports = function (root, config, level) {
           Object.keys(resources).forEach(key => {
             let comma = (++idx < len) ? ',' : '';
             let resource = resources[key].js ? key : `${key}.${config.view}`;
-            offset += buf.write(`  ${wrapModuleName(resource)}${comma}\n`, offset);
+            offset += buf.write(`  ${wrapModuleName(resource, config)}${comma}\n`, offset);
           });
           offset += buf.write('];\n', offset);
         } else {
@@ -192,7 +192,7 @@ module.exports = function (root, config, level) {
         if (len) {
           Object.keys(resources).forEach(key => {
             let resource = resources[key].js ? key : `${key}.${config.view}`;
-            offset += buf.write(`  config.globalResources(${wrapModuleName(resource)});\n`, offset);
+            offset += buf.write(`  config.globalResources(${wrapModuleName(resource, config)});\n`, offset);
           });
         }
         imports.forEach(name => {
