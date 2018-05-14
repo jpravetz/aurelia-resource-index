@@ -1,3 +1,4 @@
+/* This is a generated file */
 import {PLATFORM} from 'aurelia-pal';
 
 import folder1 from './folder1/index';

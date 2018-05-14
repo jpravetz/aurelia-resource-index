@@ -61,6 +61,7 @@ class IndexGenerator {
       throw new Error('Missing root');
     }
     console.log(`Processing folder ${this.root}`);
+    let data;
     return Promise.resolve()
       .then(() => {
         return this.readExclusions();
@@ -72,7 +73,14 @@ class IndexGenerator {
         return this.generateIndexBuffer();
       })
       .then((resp) => {
-        return this.writeIndexFile(resp);
+        data = resp;
+        return this.compareIndexFile(resp)
+      })
+      .then((bEquals) => {
+        if (!bEquals) {
+          return this.writeIndexFile(data);
+        }
+        console.log('No changes for index.js');
       })
       .then((resp) => {
         return this.processSubFolders();
@@ -130,6 +138,7 @@ class IndexGenerator {
 
     let buf = Buffer.alloc(4096);
     let offset = 0;
+    offset += buf.write('/* This is a generated file */\n');
     if (resourceLen && this.config.pal) {
       offset += buf.write('import {PLATFORM} from \'aurelia-pal\';\n\n', offset);
     }
@@ -186,6 +195,16 @@ class IndexGenerator {
     let indexFile = Path.resolve(this.root, 'index.js');
     console.log('Generating ', indexFile);
     return fsWriteFile(indexFile, data.buf.slice(0, data.len));
+  }
+
+  compareIndexFile (data) {
+    return fsReadFile(this.root)
+      .then((existingBuf) => {
+        return Promise.resolve(data.buf.equals(existingBuf));
+      })
+      .catch((err) => {
+        return Promise.resolve(false);
+      });
   }
 
   wrapModuleName (moduleId) {
