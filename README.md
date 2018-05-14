@@ -59,7 +59,8 @@ import project from '../aurelia.json';
 function generateIndex(done) {
   let path = Path.resolve(project.paths.root, project.paths.resources);
   let config = project.resourceIndex;
-  generateFolderIndex(path, config, 0)
+  let generator = new IndexGenerator(config,path);
+  generator.run(config, path, 0)
     .then(() => {
       done();
     })

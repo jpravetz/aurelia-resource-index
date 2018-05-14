@@ -1,4 +1,4 @@
-let generateFolderIndex = require('../src');
+let IndexGenerator = require('../src/index-generator');
 let util = require('util');
 let ncp = util.promisify(require('ncp').ncp);
 let rimraf = util.promisify(require('rimraf'));
@@ -33,7 +33,8 @@ describe('generate pal', () => {
 
   it('pal_html', () => {
     let compare = 'pal_html';
-    return generateFolderIndex(resources, config)
+    let generator = new IndexGenerator(config, resources);
+    return generator.run()
       .then((resp) => {
         expect(filesEqual(`${resources}/index.js`, `${resources}/${compare}.js`)).toBe(true);
         expect(filesEqual(`${resources}/folder1/index.js`, `${resources}/folder1/${compare}.js`)).toBe(true);
@@ -43,7 +44,8 @@ describe('generate pal', () => {
 
   it('pal_pug', () => {
     let compare = 'pal_pug';
-    return generateFolderIndex(resources, config)
+    let generator = new IndexGenerator(config, resources);
+    return generator.run()
       .then((resp) => {
         expect(filesEqual(`${resources}/index.js`, `${resources}/${compare}.js`)).toBe(true);
         expect(filesEqual(`${resources}/folder1/index.js`, `${resources}/folder1/${compare}.js`)).toBe(true);
