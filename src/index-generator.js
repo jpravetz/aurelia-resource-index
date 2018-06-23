@@ -154,7 +154,7 @@ class IndexGenerator {
         let idx = 0;
         resourceKeys.forEach(key => {
           let comma = (++idx < resourceLen) ? ',' : '';
-          let resource = resources[key].js ? key : `${key}.${this.config.view}`;
+          let resource = this.resources[key].js ? key : `${key}.${this.config.view}`;
           offset += buf.write(`  ${this.wrapModuleName(resource)}${comma}\n`, offset);
         });
         offset += buf.write('];\n', offset);
