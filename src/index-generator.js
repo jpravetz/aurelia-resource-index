@@ -44,7 +44,7 @@ const fsReadFile = util.promisify(fs.readFile);
 const fsWriteFile = util.promisify(fs.writeFile);
 
 class IndexGenerator {
-  constructor (config, root, level) {
+  constructor (config, root, level=0) {
     this.config = config;
     this.root = root;
     this.level = (typeof level === 'number' ? level : 0);
@@ -161,13 +161,13 @@ class IndexGenerator {
       } else {
         offset += buf.write('let resources = [];\n', offset);
       }
-      let pre = level ? '' : './';
+      let pre = this.level ? '' : './';
       this.imports.forEach(name => {
         offset += buf.write(`${toCamelCase(name)}.forEach((module) => {\n`, offset);
         offset += buf.write(`  resources.push('${pre}${name}/' + module);\n`, offset);
         offset += buf.write('});\n', offset);
       });
-      if (level) {
+      if (this.level) {
         offset += buf.write('\nexport default resources;\n', offset);
       } else {
         offset += buf.write('\nexport function configure (config) {\n', offset);

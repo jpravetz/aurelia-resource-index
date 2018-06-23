@@ -18,7 +18,7 @@ npm install aurelia-resource-index
 
 ## Configure
 
-If you create a gulp task for this module, I recommend you configure the module using aurelia.json as shown here.
+If you create a gulp task for this module, it is recommended you configure the module using aurelia.json as shown here.
 
 Add the following entry for use with requirejs
 
