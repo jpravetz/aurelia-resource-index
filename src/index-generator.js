@@ -1,6 +1,7 @@
 let fs = require('fs')
 let Path = require('path');
 let util = require('util');
+let crypto = require('crypto');
 
 /**
  * Task generates webpack compatible index.js files under the src/resources folder,
@@ -44,9 +45,11 @@ const fsReadFile = util.promisify(fs.readFile);
 const fsWriteFile = util.promisify(fs.writeFile);
 
 class IndexGenerator {
-  constructor (config, root, level=0) {
+  constructor (config, root, path = '.', level = 0) {
     this.config = config;
     this.root = root;
+    this.path = path;
+    this.fullPath = path ? Path.resolve(root, path) : root;
     this.level = (typeof level === 'number' ? level : 0);
     this.imports = [];
     this.resources = {};
@@ -60,8 +63,8 @@ class IndexGenerator {
     if (!this.root) {
       throw new Error('Missing root');
     }
-    console.log(`Processing folder ${this.root}`);
-    let data;
+    // console.log(`Processing folder ${this.path}`);
+    let buf;
     return Promise.resolve()
       .then(() => {
         return this.readExclusions();
@@ -73,14 +76,14 @@ class IndexGenerator {
         return this.generateIndexBuffer();
       })
       .then((resp) => {
-        data = resp;
-        return this.compareIndexFile(resp)
+        buf = resp;
+        return this.compareIndexFile(buf);
       })
       .then((bEquals) => {
         if (!bEquals) {
-          return this.writeIndexFile(data);
+          return this.writeIndexFile(buf);
         }
-        console.log('No changes for index.js');
+        console.log(`No changes ${this.path}/index.js`);
       })
       .then((resp) => {
         return this.processSubFolders();
@@ -90,11 +93,11 @@ class IndexGenerator {
   getResourceList () {
     this.resources = {};
     this.imports = [];
-    return fsReaddir(this.root)
+    return fsReaddir(this.fullPath)
       .then((files) => {
         let jobs = [];
         files.forEach(file => {
-          let job = fsStat(Path.resolve(this.root, file))
+          let job = fsStat(Path.resolve(this.fullPath, file))
             .then((stat) => {
               if (stat.isDirectory()) {
                 this.imports.push(file);
@@ -118,9 +121,9 @@ class IndexGenerator {
 
   processSubFolders () {
     let jobs = [];
-    console.log(`Processing ${this.imports.length} subfolders`);
+    // console.log(`Processing ${this.imports.length} subfolders`);
     this.imports.forEach(file => {
-      let generator = new IndexGenerator(this.config, Path.resolve(this.root, file), this.level + 1);
+      let generator = new IndexGenerator(this.config, this.root, [this.path, file].join('/'), this.level + 1);
       let job = generator.run();
       jobs.push(job);
     });
@@ -132,7 +135,7 @@ class IndexGenerator {
     let resourceLen = resourceKeys.length;
 
     if (MODE.skipEmptyFolder && !this.imports.length && !resourceLen) {
-      console.log('Skipping folder ', this.root);
+      console.log('Skipping folder ', this.path);
       return Promise.resolve();
     }
 
@@ -188,21 +191,25 @@ class IndexGenerator {
       offset += buf.write('};\n', offset);
       offset += buf.write('\nexport default configure;\n', offset);
     }
-    return Promise.resolve({ buf: buf, len: offset });
+    return Promise.resolve(buf.slice(0, offset));
   }
 
-  writeIndexFile (data) {
-    let indexFile = Path.resolve(this.root, 'index.js');
-    console.log('Generating ', indexFile);
-    return fsWriteFile(indexFile, data.buf.slice(0, data.len));
+  writeIndexFile (buf) {
+    let indexFile = Path.resolve(this.fullPath, 'index.js');
+    console.log(`Updating ${this.path}/index.js`);
+    return fsWriteFile(indexFile, buf);
   }
 
-  compareIndexFile (data) {
-    return fsReadFile(this.root)
+  compareIndexFile (buf) {
+    return fsReadFile(Path.resolve(this.fullPath, 'index.js'))
       .then((existingBuf) => {
-        return Promise.resolve(data.buf.equals(existingBuf));
+        const existingHash = crypto.createHash('sha256').update(existingBuf).digest('hex');
+        const newHash = crypto.createHash('sha256').update(buf).digest('hex');
+        let equals = existingHash === newHash;
+        return Promise.resolve(equals);
       })
       .catch((err) => {
+        console.log('Error: ', err);
         return Promise.resolve(false);
       });
   }
@@ -226,7 +233,7 @@ class IndexGenerator {
   readExclusions () {
     this.exclusions = [];
     return new Promise((resolve, reject) => {
-      let ignorePath = Path.resolve(this.root, '.resourceignore');
+      let ignorePath = Path.resolve(this.fullPath, '.resourceignore');
       fsStat(ignorePath)
         .then((stat) => {
           if (stat.isFile()) {

@@ -1,6 +1,6 @@
 {
   "name": "aurelia-resource-index",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Generator to create index.js to declare all resources within a folder as global",
   "main": "src/index-generator.js",
   "scripts": {
