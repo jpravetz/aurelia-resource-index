@@ -38,7 +38,78 @@ function toCamelCase (str) {
   }).join('');
 }
 
+function getCode(str, pos, code) {
+  if (code) {
+    for (i = pos; code = getCode(str, i), code < 76 && code > 65;) {
+      ++i;
+    }
+    return +str.slice(pos - 1, i);
+  }
+  code = alphabet && alphabet.indexOf(str.charAt(pos));
+  if (code > -1) {
+    return code + 76;
+  }
+  if ((code = str.charCodeAt(pos) || 0), code < 45 || code > 127) {
+    return code;
+  }
+  if (code < 46) {
+    return 65;
+  }
+  if (code < 48) {
+    return code - 1;
+  }
+  if (code < 58) {   // 0-9
+    return code + 18;
+  }
+  if (code < 65) {
+    return code - 11;
+  }
+  if (code < 91) {   // A-Z
+    return code + 11;
+  }
+  if (code < 97) {   // A-Z
+    return code - 37;
+  }
+  if (code < 123) {   // a-z
+    return code + 5;
+  }
+  return code - 63;
+}
 
+
+function xcompare(a, b) {
+  let i = 1;
+  let code = { a: 1, b: 1 };
+  let pos = { a: 0, b: 0 };
+  let alphabet = String.alphabet;
+
+  if ((a += "") != (b += "")) {
+    for (; code.b;) {
+      code.a = getCode(a, pos.a++)
+      code.b = getCode(b, pos.b++)
+
+      if (code.a < 76 && code.b < 76 && code.a > 66 && code.b > 66) {
+        code.a = getCode(a, pos.a, pos.a)
+        code.b = getCode(b, pos.b, pos.b = i)
+        pos.b = i
+      }
+
+      if (code.a != code.b) return (code.a < code.b) ? -1 : 1
+    }
+  }
+  return 0;
+}
+
+function compare(a,b) {
+  if( a.toLowerCase() < b.toLowerCase() ) {
+    return -1;
+  }
+  if( b.toLowerCase() < a.toLowerCase() ) {
+    return -1;
+  }
+  return 0;
+}
+  
 const fsStat = util.promisify(fs.stat);
 const fsReaddir = util.promisify(fs.readdir);
 const fsReadFile = util.promisify(fs.readFile);
@@ -115,7 +186,11 @@ class IndexGenerator {
             });
           jobs.push(job);
         });
-        return Promise.all(jobs);
+        return Promise.all(jobs)
+          .then((resp) => {
+            this.resourceKeys = Object.keys(this.resources).sort(compare);
+            return Promise.resolve();
+          })
       });
   }
 
@@ -131,8 +206,7 @@ class IndexGenerator {
   }
 
   generateIndexBuffer () {
-    let resourceKeys = Object.keys(this.resources);
-    let resourceLen = resourceKeys.length;
+    let resourceLen = this.resourceKeys.length;
 
     if (MODE.skipEmptyFolder && !this.imports.length && !resourceLen) {
       console.log('Skipping folder ', this.path);
@@ -155,7 +229,7 @@ class IndexGenerator {
       if (resourceLen) {
         offset += buf.write('let resources = [\n', offset);
         let idx = 0;
-        resourceKeys.forEach(key => {
+        this.resourceKeys.forEach(key => {
           let comma = (++idx < resourceLen) ? ',' : '';
           let resource = this.resources[key].js ? key : `${key}.${this.config.view}`;
           offset += buf.write(`  ${this.wrapModuleName(resource)}${comma}\n`, offset);
@@ -180,7 +254,7 @@ class IndexGenerator {
     } else {
       offset += buf.write('const configure = function (config) {\n', offset);
       if (resourceLen) {
-        resourceKeys.forEach(key => {
+        this.resourceKeys.forEach(key => {
           let resource = this.resources[key].js ? key : `${key}.${this.config.view}`;
           offset += buf.write(`  config.globalResources(${this.wrapModuleName(resource)});\n`, offset);
         });
