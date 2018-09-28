@@ -19,17 +19,18 @@ const REGEX = {
   js: /\.(js|mjs|ts)$/i,
   html: /\.(ejs|pug|jade|html)$/i,
   base: /([^\/\.]+)\.[a-zA-Z0-9]+$/,
-  sep: /[,\s]+/
+  sep: /[,\s]+/,
+  ignore: /^\./
 };
 
-function fileBase (path) {
+function fileBase(path) {
   let m = path.match(REGEX.base);
   if (m && m[1]) {
     return m[1];
   }
 }
 
-function toCamelCase (str) {
+function toCamelCase(str) {
   return str.split('-').map(function (word, index) {
     if (index === 0) {
       return word.toLowerCase();
@@ -38,85 +39,23 @@ function toCamelCase (str) {
   }).join('');
 }
 
-function getCode(str, pos, code) {
-  if (code) {
-    for (i = pos; code = getCode(str, i), code < 76 && code > 65;) {
-      ++i;
-    }
-    return +str.slice(pos - 1, i);
+function compare(a, b) {
+  if (a.toLowerCase() < b.toLowerCase()) {
+    return -1;
   }
-  code = alphabet && alphabet.indexOf(str.charAt(pos));
-  if (code > -1) {
-    return code + 76;
-  }
-  if ((code = str.charCodeAt(pos) || 0), code < 45 || code > 127) {
-    return code;
-  }
-  if (code < 46) {
-    return 65;
-  }
-  if (code < 48) {
-    return code - 1;
-  }
-  if (code < 58) {   // 0-9
-    return code + 18;
-  }
-  if (code < 65) {
-    return code - 11;
-  }
-  if (code < 91) {   // A-Z
-    return code + 11;
-  }
-  if (code < 97) {   // A-Z
-    return code - 37;
-  }
-  if (code < 123) {   // a-z
-    return code + 5;
-  }
-  return code - 63;
-}
-
-
-function xcompare(a, b) {
-  let i = 1;
-  let code = { a: 1, b: 1 };
-  let pos = { a: 0, b: 0 };
-  let alphabet = String.alphabet;
-
-  if ((a += "") != (b += "")) {
-    for (; code.b;) {
-      code.a = getCode(a, pos.a++)
-      code.b = getCode(b, pos.b++)
-
-      if (code.a < 76 && code.b < 76 && code.a > 66 && code.b > 66) {
-        code.a = getCode(a, pos.a, pos.a)
-        code.b = getCode(b, pos.b, pos.b = i)
-        pos.b = i
-      }
-
-      if (code.a != code.b) return (code.a < code.b) ? -1 : 1
-    }
+  if (b.toLowerCase() < a.toLowerCase()) {
+    return 1;
   }
   return 0;
 }
 
-function compare(a,b) {
-  if( a.toLowerCase() < b.toLowerCase() ) {
-    return -1;
-  }
-  if( b.toLowerCase() < a.toLowerCase() ) {
-    return -1;
-  }
-  return 0;
-}
-  
 const fsStat = util.promisify(fs.stat);
 const fsReaddir = util.promisify(fs.readdir);
 const fsReadFile = util.promisify(fs.readFile);
 const fsWriteFile = util.promisify(fs.writeFile);
 
 class IndexGenerator {
-  constructor (config, root, path = '.', level = 0) {
+  constructor(config, root, path = '.', level = 0) {
     this.config = config;
     this.root = root;
     this.path = path;
@@ -127,7 +66,7 @@ class IndexGenerator {
     this.exclusions = [];
   }
 
-  run () {
+  run() {
     if (!this.config) {
       throw new Error('Missing config');
     }
@@ -161,7 +100,7 @@ class IndexGenerator {
       })
   }
 
-  getResourceList () {
+  getResourceList() {
     this.resources = {};
     this.imports = [];
     return fsReaddir(this.fullPath)
@@ -171,7 +110,9 @@ class IndexGenerator {
           let job = fsStat(Path.resolve(this.fullPath, file))
             .then((stat) => {
               if (stat.isDirectory()) {
-                this.imports.push(file);
+                if (!REGEX.ignore.test(file)) {
+                  this.imports.push(file);
+                }
               } else if (stat.isFile() && !REGEX.index.test(file)) {
                 let base = fileBase(file);
                 if (!this.exclusions.includes(base)) {
@@ -188,13 +129,14 @@ class IndexGenerator {
         });
         return Promise.all(jobs)
           .then((resp) => {
+            this.imports = this.imports.sort(compare);
             this.resourceKeys = Object.keys(this.resources).sort(compare);
             return Promise.resolve();
           })
       });
   }
 
-  processSubFolders () {
+  processSubFolders() {
     let jobs = [];
     // console.log(`Processing ${this.imports.length} subfolders`);
     this.imports.forEach(file => {
@@ -205,7 +147,7 @@ class IndexGenerator {
     return Promise.all(jobs);
   }
 
-  generateIndexBuffer () {
+  generateIndexBuffer() {
     let resourceLen = this.resourceKeys.length;
 
     if (MODE.skipEmptyFolder && !this.imports.length && !resourceLen) {
@@ -268,13 +210,13 @@ class IndexGenerator {
     return Promise.resolve(buf.slice(0, offset));
   }
 
-  writeIndexFile (buf) {
+  writeIndexFile(buf) {
     let indexFile = Path.resolve(this.fullPath, 'index.js');
     console.log(`Updating ${this.path}/index.js`);
     return fsWriteFile(indexFile, buf);
   }
 
-  compareIndexFile (buf) {
+  compareIndexFile(buf) {
     return fsReadFile(Path.resolve(this.fullPath, 'index.js'))
       .then((existingBuf) => {
         const existingHash = crypto.createHash('sha256').update(existingBuf).digest('hex');
@@ -288,7 +230,7 @@ class IndexGenerator {
       });
   }
 
-  wrapModuleName (moduleId) {
+  wrapModuleName(moduleId) {
     if (this.config.pal) {
       return `PLATFORM.moduleName('./${moduleId}')`;
     } else if (this.config.mode === 'single') {
@@ -304,7 +246,7 @@ class IndexGenerator {
    * @param root
    * @returns {Promise<any>}
    */
-  readExclusions () {
+  readExclusions() {
     this.exclusions = [];
     return new Promise((resolve, reject) => {
       let ignorePath = Path.resolve(this.fullPath, '.resourceignore');
