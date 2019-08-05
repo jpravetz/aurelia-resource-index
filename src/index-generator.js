@@ -42,6 +42,16 @@ function toCamelCase(str) {
     .join('');
 }
 
+function compare(a, b) {
+  if (a.toLowerCase() < b.toLowerCase()) {
+    return -1;
+  }
+  if (b.toLowerCase() < a.toLowerCase()) {
+    return 1;
+  }
+  return 0;
+}
+
 const fsStat = util.promisify(fs.stat);
 const fsReaddir = util.promisify(fs.readdir);
 const fsReadFile = util.promisify(fs.readFile);
@@ -151,7 +161,8 @@ class IndexGenerator {
   }
 
   generateIndexBuffer() {
-    let resourceKeys = Object.keys(this.resources);
+    this.imports = this.imports.sort(compare);
+    let resourceKeys = Object.keys(this.resources).sort(compare);
     let resourceLen = resourceKeys.length;
     let view = this.config.view || 'html';
 

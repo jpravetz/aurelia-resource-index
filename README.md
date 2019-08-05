@@ -31,9 +31,7 @@ Add the following entry for use with `requirejs`
   "resourceIndexer": {
     "view": "html",
     "pal": false,
-    "mode": "single",
-    "verbose": 1,
-    "exclude": /^\./
+    "mode": "single"
   },
 ```
 
