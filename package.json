@@ -1,14 +1,17 @@
 {
   "name": "aurelia-resource-index",
-  "version": "1.0.4",
-  "description": "Generator to create index.js to declare all resources within a folder as global",
+  "version": "1.0.5",
+  "description": "Generates index.js to recursively declare all resources within a folder as global",
   "main": "src/index-generator.js",
-  "scripts": {
-    "test": "jest"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jpravetz/aurelia-resource-index.git"
+  },
+  "scripts": {
+    "test": "jest --runInBand"
+  },
+  "jest": {
+    "verbose": true
   },
   "keywords": [
     "aurelia",
@@ -26,6 +29,7 @@
     "gulp": "^3.9.1",
     "jest": "^22.4.4",
     "ncp": "^2.0.0",
+    "prettier": "^1.18.2",
     "rimraf": "^2.6.2"
   }
 }
