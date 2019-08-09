@@ -59,6 +59,9 @@ const fsWriteFile = util.promisify(fs.writeFile);
 
 class IndexGenerator {
   constructor(config, root, path = '.', level = 0) {
+    if (!config) {
+      throw new Error('Config not defined');
+    }
     this.config = config;
     this.config.exclude =
       this.config.exclude instanceof RegExp ? this.config.exclude : REGEX.alwaysExclude;
@@ -165,6 +168,7 @@ class IndexGenerator {
     let resourceKeys = Object.keys(this.resources).sort(compare);
     let resourceLen = resourceKeys.length;
     let view = this.config.view || 'html';
+    let isTs = this.config.fileExtension === '.ts';
 
     if (MODE.skipEmptyFolder && !this.imports.length && !resourceLen) {
       this.log(2, 'Skipping folder ', this.path);
@@ -187,6 +191,12 @@ class IndexGenerator {
       offset += buf.write('\n', offset);
     }
     if (this.config.mode === 'single') {
+      if (!this.level && isTs) {
+        offset += buf.write(
+          "import { FrameworkConfiguration } from 'aurelia-framework';\n\n",
+          offset
+        );
+      }
       if (resourceLen) {
         offset += buf.write('let resources = [\n', offset);
         let idx = 0;
@@ -208,7 +218,12 @@ class IndexGenerator {
       if (this.level) {
         offset += buf.write('\nexport default resources;\n', offset);
       } else {
-        offset += buf.write('\nexport function configure(config) {\n', offset);
+        offset += buf.write(
+          '\nexport function configure(config' +
+            (isTs ? ':FrameworkConfiguration' : '') +
+            ') {\n',
+          offset
+        );
         offset += buf.write('  config.globalResources(resources);\n', offset);
         offset += buf.write('}\n', offset);
       }

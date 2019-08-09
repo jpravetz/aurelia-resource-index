@@ -31,5 +31,6 @@
     "ncp": "^2.0.0",
     "prettier": "^1.18.2",
     "rimraf": "^2.6.2"
-  }
+  },
+  "dependencies": {}
 }

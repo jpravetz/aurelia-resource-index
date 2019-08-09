@@ -1,18 +1,17 @@
 # aurelia-resource-index
 
-Generates `index.js` or `index.ts` that declares all resources within a folder
-and it's subfolders as global.
+Generates global resource index files for all components within a folder.
 
 In a project generated with [aurelia-cli](https://github.com/aurelia/cli), it is
-common to place all resources within a `src/resources` folder and to make these
-resources global.
+common to place all global components within a `src/resources` folder.
 
-This module will generate an index file (e.g. `src/resources/index.js`) that
-includes all resources with this folder, recursively descending into subfolders.
-By default, ignores files and folders that being with `'.'` (period).
+This module will generate index files (e.g. `src/resources/index.js`) that
+includes all resources with this folder, recursively descending into subfolders,
+creating individual index files in each folder. By default, ignores files and
+folders that being with `'.'` (period).
 
-Can be configured to generate index that is compatible with `requirejs` or
-`webpack`.
+Can be configured to generate index files that are compatible with `requirejs`,
+`systemjs` or `webpack`.
 
 ## Install
 
@@ -25,52 +24,58 @@ npm install aurelia-resource-index
 If you create a `gulp` task for this module, it is recommended you configure the
 module using `aurelia.json` as shown here.
 
-Add the following entry for use with `requirejs`
+Add the following entry for use with `requirejs` or `systemjs`.
 
 ```json
   "resourceIndexer": {
     "view": "html",
     "pal": false,
-    "mode": "single"
+    "mode": "single",
+    "fileExtension": ".ts",
+    "verbose": 1,
+    "source": ["src/resources/**/*.*"]
   },
 ```
 
-Add the following entry for use with `webpack`
+The last `source` entry is used by the `watch` task.
+
+Add the following entry for use with `webpack`.
 
 ```json
   "resourceIndexer": {
     "view": "html",
-    "pal": true,
-    "fileExtension": ".ts"    // defaults to ".js"
+    "pal": true
   },
 ```
 
-## aurelia.json resourceIndex Options
+## aurelia.json resourceIndex config
 
-- `view` - The file extension used for view source files. Defaults to `html`. As
-  an example, if using [pug](http://pugjs.org) as an html preprocessor format
-  then set to `pug`.
+- `view` - The file extension used when looking for view source files that do
+  not have an accompanying js/ts file. Defaults to `html`. As an example, if
+  using [pug](http://pugjs.org) as an html preprocessor format then set to
+  `pug`.
 - `pal` (boolean) - If true then each module is declared within a
   `PLATFORM.moduleName()` call. Used with `webpack`.
 - `mode` - If value is `single` then will declare all global resources using a
   single call to `globalResources`. Otherwise each resource is added individually.
   Do not set to `single` if using with `webpack`.
 - `fileExtension` - The file extension to use for the generated files. Defaults
-  to `.js`. Set to `.ts` for typescript.
+  to `.js`.
 - `verbose` (integer) - If 1 then logs to console every index file that is
   updated or created. If 2 logs files that are unchanged. Default 0 for no
   logging.
 - `exclude` (RegExp) - Exclude files and folders with names that match this
   pattern. Defaults to files and folders that begin with a period `/^\./`.
-- `excludeFile` (string) - The name of a file with a list of files to exclude.
-  Defaults to `.resourceignore`.
+- `excludeFile` (string) - The name of a file with a list of files to exclude at
+  that folder level. Defaults to `.resourceignore`.
 
 To exclude certain files and folders from being indexed, set an exclude RegExp,
-or list specific files to exclude in a `.resourceignore` file. Do not include
-the file extension when using `.resourceignore`. **Hint**: you can put files
-that you are not using in a `.unused` or `.deprecated` folder.
+or list specific files to exclude in a `.resourceignore` file in the same folder
+as the file you wish to excluse. Do not include the file extension when using
+`.resourceignore`. **Hint**: you can put files that you are not using in a
+`.unused` or `.deprecated` folder.
 
-## Run as Gulp Task
+## Run as Gulp Task on resources folder
 
 Add a `gulp` task to your `aurelia_project/tasks` folder.
 
@@ -83,7 +88,7 @@ import * as project from '../aurelia.json';
 import * as IndexGenerator from 'aurelia-resource-index';
 
 function generateResourceIndexFiles(done) {
-  let config = project.resourceIndex;
+  let config = project.resourceIndexer;
   let generator = new IndexGenerator(config, project.paths.root, project.paths.resources);
   generator
     .run()
@@ -100,16 +105,65 @@ const run = gulp.series(generateResourceIndexFiles);
 export { run as default };
 ```
 
-Add this task as a build task in build.ts. Import the task:
+## Build (webpack only)
+
+In `aurelia_projects/tasks/build.ts`
 
 ```js
 import resourceIndexer from './resource-indexer';
 ```
 
-Then add this to the task list:
+And add this to the task list:
 
 ```js
 export { config, resourceIndexer, buildWebpack, build as default };
+```
+
+## Build (requirejs and systemjs only)
+
+In `aurelia_projects/tasks/build.ts`
+
+```ts
+import resourceIndexer from './resource-indexer';
+```
+
+And add the resourceIndexer as a gulp task:
+
+```ts
+let build = gulp.series(
+  readProjectConfiguration,
+  resourceIndexer,
+  gulp.parallel(transpile, processMarkup, processJson, processCSS, copyFiles),
+  writeBundles
+);
+```
+
+## Watch (webpack only)
+
+Please contribute.
+
+## Watch (requirejs and systemjs only)
+
+In `aurelia_projects/tasks/watch.ts`
+
+```ts
+import resourceIndexer from './resource-indexer';
+```
+
+and add this entry to the watches array:
+
+```ts
+  { name: 'globalResource', callback: resourceIndexer, source: project.resourceIndexer.source }
+```
+
+## main.ts
+
+In your `main.js` or `main.ts` file add the following. For Webpack, wrap
+`resources` with `PLATFORM.moduleName('resources')`.
+
+```js
+// Load the generated index.js
+aurelia.use.feature('resources');
 ```
 
 ## Developer
